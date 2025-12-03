@@ -111,8 +111,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.pig4cloud.pigx.App</mainClass> <!-- 👈 替换为你的主类 -->
-                    <skip>false</skip> <!-- ✅ 显式启用 repackage -->
+                    <mainClass>com.pig4cloud.databridge.DataBridgeApplication</mainClass>
+                    <skip>false</skip>
                 </configuration>
             </plugin>
             <plugin>

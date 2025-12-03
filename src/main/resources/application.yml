@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: databridge
+  profiles:
+    active: @profiles.active@
+
+server:
+  port: 8080
