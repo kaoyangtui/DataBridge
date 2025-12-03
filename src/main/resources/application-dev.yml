@@ -1,11 +1,30 @@
-# =========================
-# 🗄️ 数据库配置（Druid）
-# =========================
+## spring security 配置
+security:
+  oauth2:
+    client:
+      ignore-urls:
+        - /**
 spring:
+  cache:
+    type: redis
+  data:
+    redis:
+      host: 14.103.193.249
+      port: 6379
+      password: wakeyoga123
+      database: 1
+  # 数据库相关配置
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
       driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://127.0.0.1:3306/databridge?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2B8&allowMultiQueries=true&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true
       username: root
-      password: 7f61cf0e00ccce1a
+      password: c45540d049692a9c
+      url: jdbc:mysql://14.103.193.249:3306/databridge?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2B8&allowMultiQueries=true&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true
+
+# =========================
+# 🐷 PigX 配置
+# =========================
+pigx:
+  mybatis:
+    show-sql: true

@@ -30,59 +30,41 @@
     <description>单体版本启动</description>
 
     <dependencies>
-        <!-- mysql -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-        </dependency>
-        <!-- ojdbc8 -->
-        <dependency>
-            <groupId>com.oracle.database.jdbc</groupId>
-            <artifactId>ojdbc8</artifactId>
-        </dependency>
-        <!--mssql-->
-        <dependency>
-            <groupId>com.microsoft.sqlserver</groupId>
-            <artifactId>mssql-jdbc</artifactId>
-        </dependency>
+        <!--必备：认证中心模块-->
         <dependency>
             <groupId>com.pig4cloud</groupId>
-            <artifactId>pigx-common-data</artifactId>
+            <artifactId>pigx-auth</artifactId>
+            <version>${project.version}</version>
         </dependency>
-        <!--swagger-->
+        <!--必备：用户管理模块-->
+        <dependency>
+            <groupId>com.pig4cloud</groupId>
+            <artifactId>pigx-upms-biz</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!--安全模块-->
+        <dependency>
+            <groupId>com.pig4cloud</groupId>
+            <artifactId>pigx-common-security</artifactId>
+        </dependency>
+        <!-- 接口文档UI  -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.springboot</groupId>
+            <artifactId>knife4j-boot-openapi3-ui</artifactId>
+            <version>${knife4j.version}</version>
+        </dependency>
+        <!--接口文档-->
         <dependency>
             <groupId>com.pig4cloud</groupId>
             <artifactId>pigx-common-swagger</artifactId>
-        </dependency>
-        <!--XSS 安全过滤-->
-        <dependency>
-            <groupId>com.pig4cloud</groupId>
-            <artifactId>pigx-common-xss</artifactId>
-        </dependency>
-        <!-- 字段审计 -->
-        <dependency>
-            <groupId>com.pig4cloud</groupId>
-            <artifactId>pigx-common-audit</artifactId>
-        </dependency>
-        <!-- API加解密 -->
-        <dependency>
-            <groupId>com.pig4cloud</groupId>
-            <artifactId>pigx-common-encrypt-api</artifactId>
-        </dependency>
-        <!--mybatis-->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-        </dependency>
-        <!-- druid 连接池 -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid-spring-boot-3-starter</artifactId>
-        </dependency>
-        <!--web 模块-->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <!--undertow容器-->
         <dependency>
@@ -111,8 +93,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.pig4cloud.databridge.DataBridgeApplication</mainClass>
-                    <skip>false</skip>
+                    <mainClass>com.pig4cloud.pigx.App</mainClass> <!-- 👈 替换为你的主类 -->
+                    <skip>false</skip> <!-- ✅ 显式启用 repackage -->
                 </configuration>
             </plugin>
             <plugin>

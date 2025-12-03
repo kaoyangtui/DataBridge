@@ -1,8 +1,118 @@
+server:
+  port: 9999
+  servlet:
+    context-path: /admin
+
 spring:
   application:
-    name: databridge
+    name: @project.artifactId@
+  # 缓存相关配置
+  cache:
+    type: redis
+  # 上传文件大小限制
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  cloud:
+    discovery:
+      enabled: false
+    nacos:
+      config.enabled: false
+      discovery.enabled: false
+    gateway:
+      server.webflux:
+        enabled: false
+        redis.enabled: false
+    sentinel.enabled: false
+    openfeign.okhttp.enabled: true
+  freemarker: # freemarker 配置，授权码模式页面渲染使用
+    suffix: .ftl
+    template-loader-path: classpath:/templates/
+    request-context-attribute: request
+  main:
+    allow-bean-definition-overriding: true
   profiles:
     active: @profiles.active@
 
-server:
-  port: 8080
+## spring security 对外暴露接口设置
+security:
+  encodeKey: pigxpigxpigxpigx
+  micro: false
+  oauth2:
+    client:
+      ignore-urls:
+        - /webjars/**
+        - /v3/api-docs/**
+        - /doc.html
+        - /swagger-ui.html
+        - /swagger-ui/**
+        - /swagger-resources
+        - /token/**
+        - /error
+        - /druid/**
+        - /actuator/**
+        - /code/**
+
+#--------------如下配置尽量不要变动-------------
+# mybatis-plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*Mapper.xml
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      where-strategy: not_empty
+      insert-strategy: not_empty
+      update-strategy: not_null
+  type-handlers-package: com.pig4cloud.pigx.common.data.handler
+  configuration:
+    jdbc-type-for-null: 'null'
+    call-setters-on-nulls: true
+    shrink-whitespaces-in-sql: true
+# 查询以下前缀的表，不输出日志
+pigx:
+  mybatis:
+    skip-table:
+      - QRTZ_  #quartz 定时任务的表
+      - ACT_   #工作流相关的表
+    show-sql: false
+
+# 文件上传配置
+file:
+  bucketName: s3demo # 上文创建的桶名称
+  local:
+    enable: true
+    base-path: /data
+
+# 验证码配置
+aj:
+  captcha:
+    water-mark: pig4cloud
+
+# 配置文件加密根密码
+jasypt:
+  encryptor:
+    password: pigx
+
+# swagger token url 配置
+swagger:
+  token-url: ${swagger.gateway}/admin/oauth2/token
+
+# jsonflow流程相关配置
+flow:
+  core:
+    isCallDefHttp: true
+    orderHttpAddress:
+      - http://${pigx-admin:127.0.0.1}:${server.port:9999}/admin
+      - pigx-admin@http://${pigx-admin:127.0.0.1}:${server.port:9999}/admin
+    queryOrder: /order-base/order/flow-inst-id
+    updateOrder: pigx-admin@/order-base/update-order-info
+    startSubFlow: /order-base/start-sub-flow
+    restartSubFlow: /order-base/restart-sub-flow
+    backParFlow: /order-base/back-par-flow
+    listRunByRunJobIds: /handover-node-record/list-run/run-job-ids
+    listTabsOptionByIds: /flow-application/list/ids
+    isAllowNoRoleUser: true
+    isAllowInitSelf: false
+    isRejectAnyNode: true
