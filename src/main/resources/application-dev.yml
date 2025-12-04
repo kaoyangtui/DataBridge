@@ -21,6 +21,14 @@ spring:
       username: root
       password: c45540d049692a9c
       url: jdbc:mysql://14.103.193.249:3306/databridge?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2B8&allowMultiQueries=true&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true
+es:
+  address: 14.103.193.249:9200
+  username: elastic
+  password: COwkX393BF
+
+sync:
+  canal-adapter:
+    base-url: http://14.103.193.249:8081
 
 # =========================
 # 🐷 PigX 配置
