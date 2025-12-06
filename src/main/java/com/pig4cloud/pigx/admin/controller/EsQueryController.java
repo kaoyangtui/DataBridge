@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * ES 通用查询 - 运行时查询 & 导出
  */
 @RestController
-@RequestMapping("/admin/es/query")
+@RequestMapping("/es/query")
 @RequiredArgsConstructor
 @Tag(name = "ES 通用查询 - 运行时查询")
 public class EsQueryController {
@@ -83,7 +83,6 @@ public class EsQueryController {
         List<EsDatasetField> allFields = esDatasetFieldService.list(
                 Wrappers.lambdaQuery(EsDatasetField.class)
                         .eq(EsDatasetField::getDatasetId, dataset.getId())
-                        .eq(EsDatasetField::getDelFlag, "0")
         );
 
         Set<String> reqFieldSet = request.getExportFieldCodes() == null

@@ -202,14 +202,6 @@ public class EsDatasetField extends Model<EsDatasetField> {
     private LocalDateTime updateTime;
 
 	/**
-	* 删除标记：0-正常 1-删除
-	*/
-    @TableLogic
-	@TableField(fill = FieldFill.INSERT)
-    @Schema(description="删除标记：0-正常 1-删除")
-    private String delFlag;
-
-	/**
 	* 租户ID
 	*/
     @Schema(description="租户ID")

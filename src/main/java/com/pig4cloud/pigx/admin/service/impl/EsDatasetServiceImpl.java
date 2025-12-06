@@ -41,7 +41,8 @@ public class EsDatasetServiceImpl extends ServiceImpl<EsDatasetMapper, EsDataset
         implements EsDatasetService {
 
     private final EsDatasetFieldService datasetFieldService;
-    private final DataSource dataSource; // 用于 SQL 校验 & 字段预览
+    // 用于 SQL 校验 & 字段预览
+    private final DataSource dataSource;
 
     // ========== 分页查询 ==========
 
@@ -131,7 +132,6 @@ public class EsDatasetServiceImpl extends ServiceImpl<EsDatasetMapper, EsDataset
         List<EsDatasetField> fields = datasetFieldService.list(
                 Wrappers.lambdaQuery(EsDatasetField.class)
                         .eq(EsDatasetField::getDatasetId, id)
-                        .eq(EsDatasetField::getDelFlag, "0")
                         .orderByAsc(EsDatasetField::getListOrder)
         );
 
@@ -186,19 +186,40 @@ public class EsDatasetServiceImpl extends ServiceImpl<EsDatasetMapper, EsDataset
         EsDataset entity = new EsDataset();
         // 注意：id 在 Controller 已经 set 好（新增为 null，编辑为 pathVariable）
         entity.setId(request.getId());
+
+        // 基本信息
         entity.setDatasetCode(request.getDatasetCode());
         entity.setDatasetName(request.getDatasetName());
         entity.setBizModule(request.getBizModule());
         entity.setTags(request.getTags());
+
+        // ES 相关
         entity.setEsIndex(request.getEsIndex());
+        entity.setEsPipelineId(request.getEsPipelineId());
         entity.setPrimaryField(request.getPrimaryField());
+        entity.setEsIdField(StrUtil.emptyToDefault(request.getEsIdField(), "_id"));
+        entity.setEsUpsert(request.getEsUpsert() == null ? 1 : request.getEsUpsert());
+
+        // canal / adapter 相关
+        entity.setDataSourceKey(StrUtil.emptyToDefault(request.getDataSourceKey(), "defaultDS"));
+        entity.setCanalDest(StrUtil.emptyToDefault(request.getCanalDest(), "qhq"));
+        entity.setCanalGroup(StrUtil.emptyToDefault(request.getCanalGroup(), "g1"));
+
+        // 增量 / ETL 相关
         entity.setIncrementField(request.getIncrementField());
+        entity.setIncType(request.getIncType() == null ? 2 : request.getIncType()); // 默认自增ID
+        entity.setEtlCondition(request.getEtlCondition());
+        entity.setCommitBatch(request.getCommitBatch() == null ? 5000 : request.getCommitBatch());
+
+        // SQL & 状态
         entity.setSqlText(request.getSqlText());
         entity.setStatus(request.getStatus());
         entity.setRemark(request.getRemark());
+
         // 其他字段（tenantId、createBy 等）可根据你们的 LoginContext 补充
         return entity;
     }
+
 
     private EsDatasetField buildDatasetFieldEntity(DatasetFieldSaveRequest req, Long datasetId) {
         EsDatasetField field = new EsDatasetField();
@@ -232,7 +253,6 @@ public class EsDatasetServiceImpl extends ServiceImpl<EsDatasetMapper, EsDataset
         field.setExportTitle(StrUtil.firstNonBlank(req.getExportTitle(), req.getFieldName()));
         field.setExportOrder(defaultInt(req.getExportOrder(), 100));
 
-        field.setDelFlag("0");
         field.setCreateTime(LocalDateTime.now());
         field.setUpdateTime(LocalDateTime.now());
         return field;
@@ -335,6 +355,76 @@ public class EsDatasetServiceImpl extends ServiceImpl<EsDatasetMapper, EsDataset
         }
     }
 
+    @Override
+    public String generateAdapterYaml(Long datasetId) {
+        EsDataset ds = this.getById(datasetId);
+        if (ds == null || "1".equals(ds.getDelFlag())) {
+            throw new IllegalArgumentException("数据集不存在或已删除");
+        }
+
+        String dataSourceKey = StrUtil.blankToDefault(ds.getDataSourceKey(), "defaultDS");
+        String canalDest = StrUtil.blankToDefault(ds.getCanalDest(), "qhq");
+        String canalGroup = StrUtil.blankToDefault(ds.getCanalGroup(), "g1");
+        String esIndex = ds.getEsIndex();
+        if (StrUtil.isBlank(esIndex)) {
+            throw new IllegalArgumentException("数据集未配置 ES 索引");
+        }
+
+        String esIdField = StrUtil.blankToDefault(ds.getEsIdField(), ds.getPrimaryField());
+        if (StrUtil.isBlank(esIdField)) {
+            throw new IllegalArgumentException("未配置主键/ES _id 字段");
+        }
+
+        Integer esUpsert = ds.getEsUpsert() == null ? 1 : ds.getEsUpsert();
+        Integer commitBatch = ds.getCommitBatch() == null ? 5000 : ds.getCommitBatch();
+
+        String pipelineId = ds.getEsPipelineId(); // 可以为空
+
+        String rawSql = Optional.ofNullable(ds.getSqlText())
+                .map(String::trim)
+                .orElseThrow(() -> new IllegalArgumentException("SQL 文本不能为空"));
+
+        // 统一换行
+        rawSql = rawSql.replace("\r\n", "\n");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("dataSourceKey: ").append(dataSourceKey).append('\n');
+        sb.append("destination: ").append(canalDest).append('\n');
+        sb.append("groupId: ").append(canalGroup).append('\n');
+        sb.append('\n');
+        sb.append("esMapping:\n");
+        sb.append("  index: ").append(esIndex).append('\n');
+        sb.append("  id: ").append(esIdField).append('\n');
+        sb.append("  upsert: ").append(esUpsert == 1 ? "true" : "false").append('\n');
+
+        if (StrUtil.isNotBlank(pipelineId)) {
+            sb.append("  pipeline: ").append(pipelineId).append('\n');
+        }
+
+        // 多行 SQL 用 > 语法，逐行缩进
+        sb.append('\n');
+        sb.append("  sql: >\n");
+        for (String line : rawSql.split("\n")) {
+            if (StrUtil.isBlank(line)) {
+                sb.append("    ").append('\n');
+            } else {
+                sb.append("    ").append(line).append('\n');
+            }
+        }
+
+        // etlCondition 可选
+        if (StrUtil.isNotBlank(ds.getEtlCondition())) {
+            String etl = ds.getEtlCondition().replace("\"", "\\\"");
+            sb.append('\n');
+            sb.append("  etlCondition: \"").append(etl).append("\"\n");
+        }
+
+        sb.append("  commitBatch: ").append(commitBatch).append('\n');
+
+        return sb.toString();
+    }
+
+
     /**
      * 根据 JDBC 类型推断逻辑字段类型
      */
@@ -354,7 +444,8 @@ public class EsDatasetServiceImpl extends ServiceImpl<EsDatasetMapper, EsDataset
             case Types.DATE:
             case Types.TIME:
             case Types.TIMESTAMP:
-            case -101: // Oracle TIMESTAMP WITH TIME ZONE 等特殊类型，可以按需扩展
+            case -101:
+                // Oracle TIMESTAMP WITH TIME ZONE 等特殊类型，可以按需扩展
                 return LogicFieldTypeEnum.DATE.getCode();
 
             case Types.BIT:

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * ES 通用查询 - 数据集定义表
  *
  * @author pigx
- * @date 2025-12-03 19:52:42
+ * @date 2025-12-04 12:50:29
  */
 @Data
 @TenantTable
@@ -60,16 +60,70 @@ public class EsDataset extends Model<EsDataset> {
     private String esIndex;
 
 	/**
+	* ES pipeline ID, 如 split_semicolon_fields
+	*/
+    @Schema(description="ES pipeline ID, 如 split_semicolon_fields")
+    private String esPipelineId;
+
+	/**
+	* adapter dataSourceKey, 如 defaultDS
+	*/
+    @Schema(description="adapter dataSourceKey, 如 defaultDS")
+    private String dataSourceKey;
+
+	/**
+	* canal destination, 如 qhq
+	*/
+    @Schema(description="canal destination, 如 qhq")
+    private String canalDest;
+
+	/**
+	* canal groupId, 如 g1
+	*/
+    @Schema(description="canal groupId, 如 g1")
+    private String canalGroup;
+
+	/**
 	* 主键/唯一标识字段（SQL 字段别名）
 	*/
     @Schema(description="主键/唯一标识字段（SQL 字段别名）")
     private String primaryField;
 
 	/**
+	* ES 文档 _id 字段别名, 如 _id
+	*/
+    @Schema(description="ES 文档 _id 字段别名, 如 _id")
+    private String esIdField;
+
+	/**
+	* 是否 upsert 写入: 1=upsert, 0=create-only
+	*/
+    @Schema(description="是否 upsert 写入: 1=upsert, 0=create-only")
+    private Integer esUpsert;
+
+	/**
 	* 增量依据字段（如 update_time 或自增ID）
 	*/
     @Schema(description="增量依据字段（如 update_time 或自增ID）")
     private String incrementField;
+
+	/**
+	* 增量类型: 1=时间, 2=自增ID
+	*/
+    @Schema(description="增量类型: 1=时间, 2=自增ID")
+    private Integer incType;
+
+	/**
+	* ETL 区间模板, 如 WHERE t.id >= {} AND t.id < {}
+	*/
+    @Schema(description="ETL 区间模板, 如 WHERE t.id >= {} AND t.id < {}")
+    private String etlCondition;
+
+	/**
+	* ETL 批次大小
+	*/
+    @Schema(description="ETL 批次大小")
+    private Integer commitBatch;
 
 	/**
 	* 数据集 SQL 定义（支持多表 join）

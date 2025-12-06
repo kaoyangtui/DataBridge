@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.JsonpUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.pig4cloud.pigx.admin.api.dto.es.*;
 import com.pig4cloud.pigx.admin.entity.EsDataset;
@@ -55,7 +56,6 @@ public class EsQueryServiceImpl implements EsQueryService {
         List<EsDatasetField> fields = esDatasetFieldService.list(
                 Wrappers.lambdaQuery(EsDatasetField.class)
                         .eq(EsDatasetField::getDatasetId, dataset.getId())
-                        .eq(EsDatasetField::getDelFlag, "0")
         );
         Map<String, EsDatasetField> fieldMap = fields.stream()
                 .collect(Collectors.toMap(EsDatasetField::getFieldCode, f -> f, (a, b) -> a));
@@ -78,6 +78,15 @@ public class EsQueryServiceImpl implements EsQueryService {
         buildSorts(builder, request.getSorts(), fieldMap);
 
         SearchRequest esRequest = builder.build();
+
+        // 打印 ES 实际执行的 DSL
+        try {
+            String dsl = JsonpUtils.toString(esRequest);
+            log.info("ES 通用查询请求，index={}, body={}", index, dsl);
+        } catch (Exception e) {
+            // 打印 DSL 失败不影响正常查询
+            log.warn("打印 ES 查询 DSL 失败", e);
+        }
 
         try {
             // 指定响应的 source 类型为 Map<String, Object>
@@ -191,6 +200,15 @@ public class EsQueryServiceImpl implements EsQueryService {
                     }
                     break;
                 case "range":
+                    // 如果只有 value，没有 from/to/values，当成 term 处理，防止配错
+                    if (StrUtil.isNotBlank(c.getValue())
+                            && StrUtil.isBlank(c.getFrom())
+                            && StrUtil.isBlank(c.getTo())) {
+                        q = Query.of(builder ->
+                                builder.term(t -> t.field(esField).value(c.getValue()))
+                        );
+                        break;
+                    }
                     // from/to 可以是日期或数字，这里先用字符串，ES 会自己解析
                     RangeQuery.Builder rangeBuilder = new RangeQuery.Builder().field(esField);
                     if (StrUtil.isNotBlank(c.getFrom())) {

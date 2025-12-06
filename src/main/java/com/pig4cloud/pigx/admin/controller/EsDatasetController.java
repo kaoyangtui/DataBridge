@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/admin/es/dataset")
+@RequestMapping("/es/dataset")
 @RequiredArgsConstructor
 @Tag(name = "ES 通用查询 - 数据集管理")
 public class EsDatasetController {
@@ -72,6 +72,13 @@ public class EsDatasetController {
         entity.setId(id);
         entity.setStatus(status);
         return R.ok(esDatasetService.updateById(entity));
+    }
+
+    @GetMapping("/{id}/adapter-yml")
+    @Operation(summary = "生成 Canal Adapter YML（预览）")
+    public R<String> previewAdapterYaml(@PathVariable("id") Long id) {
+        String yaml = esDatasetService.generateAdapterYaml(id);
+        return R.ok(yaml);
     }
 
 }
