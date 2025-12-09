@@ -3,6 +3,7 @@ package com.pig4cloud.pigx.admin.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -199,6 +200,18 @@ public class EsQueryServiceImpl implements EsQueryService {
                         );
                     }
                     break;
+                case "terms":
+                    List<String> termsValues = resolveTermsValues(c);
+                    if (CollUtil.isNotEmpty(termsValues)) {
+                        List<FieldValue> fieldValues = termsValues.stream()
+                                .map(FieldValue::of)
+                                .collect(Collectors.toList());
+                        q = Query.of(builder ->
+                                builder.terms(t -> t.field(esField)
+                                        .terms(tv -> tv.value(fieldValues)))
+                        );
+                    }
+                    break;
                 case "range":
                     // 如果只有 value，没有 from/to/values，当成 term 处理，防止配错
                     if (StrUtil.isNotBlank(c.getValue())
@@ -250,6 +263,23 @@ public class EsQueryServiceImpl implements EsQueryService {
                 .build();
 
         return Query.of(q -> q.bool(bool));
+    }
+
+    private List<String> resolveTermsValues(EsQueryConditionDTO condition) {
+        if (CollUtil.isNotEmpty(condition.getValues())) {
+            return condition.getValues().stream()
+                    .filter(StrUtil::isNotBlank)
+                    .collect(Collectors.toList());
+        }
+
+        if (StrUtil.isBlank(condition.getValue())) {
+            return Collections.emptyList();
+        }
+
+        return Arrays.stream(condition.getValue().split(","))
+                .map(String::trim)
+                .filter(StrUtil::isNotBlank)
+                .collect(Collectors.toList());
     }
 
     /**
