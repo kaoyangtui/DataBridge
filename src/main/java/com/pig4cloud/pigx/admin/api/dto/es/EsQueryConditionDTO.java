@@ -3,6 +3,8 @@ package com.pig4cloud.pigx.admin.api.dto.es;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 通用查询 - 单个条件
  */
@@ -24,4 +26,7 @@ public class EsQueryConditionDTO {
 
     @Schema(description = "区间结束值（range 使用）", example = "2020-12-31")
     private String to;
+
+    @Schema(description = "多值列表（terms 使用）", example = "[\"A\",\"B\"]")
+    private List<String> values;
 }

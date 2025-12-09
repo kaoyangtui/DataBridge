@@ -3,6 +3,7 @@ package com.pig4cloud.pigx.admin.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -199,6 +200,18 @@ public class EsQueryServiceImpl implements EsQueryService {
                         );
                     }
                     break;
+                case "terms":
+                    List<String> termsValues = resolveTermsValues(c);
+                    if (CollUtil.isNotEmpty(termsValues)) {
+                        List<FieldValue> fieldValues = termsValues.stream()
+                                .map(FieldValue::of)
+                                .collect(Collectors.toList());
+                        q = Query.of(builder ->
+                                builder.terms(t -> t.field(esField)
+                                        .terms(tv -> tv.value(fieldValues)))
+                        );
+                    }
+                    break;
                 case "range":
                     // 如果只有 value，没有 from/to/values，当成 term 处理，防止配错
                     if (StrUtil.isNotBlank(c.getValue())
@@ -250,6 +263,40 @@ public class EsQueryServiceImpl implements EsQueryService {
                 .build();
 
         return Query.of(q -> q.bool(bool));
+    }
+
+    private List<String> resolveTermsValues(EsQueryConditionDTO condition) {
+        List<String> cleanedFromList = normalizeTermsValues(condition.getValues());
+        if (CollUtil.isNotEmpty(cleanedFromList)) {
+            return cleanedFromList;
+        }
+
+        return normalizeTermsValues(splitCommaSeparated(condition.getValue()));
+    }
+
+    private List<String> splitCommaSeparated(String rawValue) {
+        if (StrUtil.isBlank(rawValue)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(rawValue.split(","))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> normalizeTermsValues(Collection<String> rawValues) {
+        if (CollUtil.isEmpty(rawValues)) {
+            return Collections.emptyList();
+        }
+
+        Set<String> orderedDistinct = rawValues.stream()
+                .map(StrUtil::trim)
+                .filter(StrUtil::isNotBlank)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (orderedDistinct.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return new ArrayList<>(orderedDistinct);
     }
 
     /**
