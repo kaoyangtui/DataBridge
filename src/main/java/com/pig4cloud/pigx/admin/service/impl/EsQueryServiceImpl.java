@@ -267,9 +267,14 @@ public class EsQueryServiceImpl implements EsQueryService {
 
     private List<String> resolveTermsValues(EsQueryConditionDTO condition) {
         if (CollUtil.isNotEmpty(condition.getValues())) {
-            return condition.getValues().stream()
+            List<String> cleaned = condition.getValues().stream()
+                    .map(StrUtil::trim)
                     .filter(StrUtil::isNotBlank)
+                    .distinct()
                     .collect(Collectors.toList());
+            if (CollUtil.isNotEmpty(cleaned)) {
+                return cleaned;
+            }
         }
 
         if (StrUtil.isBlank(condition.getValue())) {
@@ -279,6 +284,7 @@ public class EsQueryServiceImpl implements EsQueryService {
         return Arrays.stream(condition.getValue().split(","))
                 .map(String::trim)
                 .filter(StrUtil::isNotBlank)
+                .distinct()
                 .collect(Collectors.toList());
     }
 
