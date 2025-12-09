@@ -266,26 +266,37 @@ public class EsQueryServiceImpl implements EsQueryService {
     }
 
     private List<String> resolveTermsValues(EsQueryConditionDTO condition) {
-        if (CollUtil.isNotEmpty(condition.getValues())) {
-            List<String> cleaned = condition.getValues().stream()
-                    .map(StrUtil::trim)
-                    .filter(StrUtil::isNotBlank)
-                    .distinct()
-                    .collect(Collectors.toList());
-            if (CollUtil.isNotEmpty(cleaned)) {
-                return cleaned;
-            }
+        List<String> cleanedFromList = normalizeTermsValues(condition.getValues());
+        if (CollUtil.isNotEmpty(cleanedFromList)) {
+            return cleanedFromList;
         }
 
-        if (StrUtil.isBlank(condition.getValue())) {
+        return normalizeTermsValues(splitCommaSeparated(condition.getValue()));
+    }
+
+    private List<String> splitCommaSeparated(String rawValue) {
+        if (StrUtil.isBlank(rawValue)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(rawValue.split(","))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> normalizeTermsValues(Collection<String> rawValues) {
+        if (CollUtil.isEmpty(rawValues)) {
             return Collections.emptyList();
         }
 
-        return Arrays.stream(condition.getValue().split(","))
-                .map(String::trim)
+        Set<String> orderedDistinct = rawValues.stream()
+                .map(StrUtil::trim)
                 .filter(StrUtil::isNotBlank)
-                .distinct()
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (orderedDistinct.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return new ArrayList<>(orderedDistinct);
     }
 
     /**
