@@ -181,11 +181,14 @@ public class EsQueryServiceImpl implements EsQueryService {
                     c.getOperator(),
                     StrUtil.emptyToDefault(field.getFilterOperator(), "term")
             );
+            String normalizedOp = StrUtil.isBlank(op)
+                    ? "term"
+                    : op.trim().toLowerCase(Locale.ROOT);
 
             String esField = field.getFieldCode(); // 默认 ES 字段名 = fieldCode
 
             Query q = null;
-            switch (op) {
+            switch (normalizedOp) {
                 case "match":
                     if (StrUtil.isNotBlank(c.getValue())) {
                         q = Query.of(builder ->
@@ -278,7 +281,11 @@ public class EsQueryServiceImpl implements EsQueryService {
         if (StrUtil.isBlank(rawValue)) {
             return Collections.emptyList();
         }
+<<<<<<< ours
         return Arrays.stream(rawValue.split(","))
+=======
+        return Arrays.stream(rawValue.split("[,，]"))
+>>>>>>> theirs
                 .collect(Collectors.toList());
     }
 
