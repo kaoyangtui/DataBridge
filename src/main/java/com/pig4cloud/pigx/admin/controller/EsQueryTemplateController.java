@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/es/template")
+@RequestMapping("/es/template") // 如果你原来是 /es/template，这里改回去即可
 @RequiredArgsConstructor
 @Tag(name = "ES 通用查询 - 查询模板")
 public class EsQueryTemplateController {

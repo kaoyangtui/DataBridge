@@ -5,6 +5,7 @@ import com.pig4cloud.pigx.admin.api.dto.es.*;
 import com.pig4cloud.pigx.admin.entity.EsDataset;
 import com.pig4cloud.pigx.admin.enums.es.EsDatasetStatusEnum;
 import com.pig4cloud.pigx.admin.service.EsDatasetService;
+import com.pig4cloud.pigx.admin.service.EsIndexService;
 import com.pig4cloud.pigx.common.core.util.R;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "ES 通用查询 - 数据集管理")
 public class EsDatasetController {
 
+    private final EsIndexService esIndexService;
     private final EsDatasetService esDatasetService;
 
     @PostMapping("/page")
@@ -81,4 +83,11 @@ public class EsDatasetController {
         return R.ok(yaml);
     }
 
+    @PostMapping("/{id}/rebuild-index")
+    @Operation(summary = "为数据集重建 ES 索引（根据字段配置生成 mapping）")
+    public R<Boolean> rebuildIndex(@PathVariable("id") Long id,
+                                   @RequestParam(value = "deleteIfExists", defaultValue = "false") boolean deleteIfExists) {
+        boolean ok = esIndexService.recreateIndexForDataset(id, deleteIfExists);
+        return R.ok(ok);
+    }
 }

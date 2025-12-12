@@ -2,8 +2,8 @@ package com.pig4cloud.pigx.admin.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.pig4cloud.pigx.admin.api.dto.es.EsQueryTemplateListRequest;
 import com.pig4cloud.pigx.admin.api.dto.es.EsQueryTemplateSaveRequest;
 import com.pig4cloud.pigx.admin.api.dto.es.EsQueryTemplateVO;
@@ -38,24 +38,34 @@ public class EsQueryTemplateServiceImpl
 
         Long currentUserId = getCurrentUserId();
 
-        return this.list(
-                        Wrappers.<EsQueryTemplate>lambdaQuery()
-                                .eq(EsQueryTemplate::getDatasetId, request.getDatasetId())
-                                .eq(EsQueryTemplate::getDelFlag, "0")
-                                .apply(request.getTemplateType() != null,
-                                        "template_type = {0}", request.getTemplateType())
-                                // 个人模板 + onlyMine=true 时，只查自己的
-                                .apply(request.getTemplateType() != null
-                                                && request.getTemplateType() == 1
-                                                && Boolean.TRUE.equals(request.getOnlyMine())
-                                                && currentUserId != null,
-                                        "owner_user_id = {0}", currentUserId)
-                                // 排序：个人/公共分组 + 默认优先 + sort_order + create_time
-                                .orderByAsc(EsQueryTemplate::getTemplateType)
-                                .orderByDesc(EsQueryTemplate::getIsDefault)
-                                .orderByAsc(EsQueryTemplate::getSortOrder)
-                                .orderByDesc(EsQueryTemplate::getCreateTime)
-                ).stream()
+        var qw = Wrappers.<EsQueryTemplate>lambdaQuery()
+                .eq(EsQueryTemplate::getDatasetId, request.getDatasetId())
+                .eq(EsQueryTemplate::getDelFlag, "0");
+
+        // 模板类型过滤
+        if (request.getTemplateType() != null) {
+            qw.eq(EsQueryTemplate::getTemplateType, request.getTemplateType());
+        }
+
+        // 个人模板 + onlyMine = true 时，只看自己的
+        if (request.getTemplateType() != null
+                && request.getTemplateType() == 1
+                && Boolean.TRUE.equals(request.getOnlyMine())
+                && currentUserId != null) {
+            qw.eq(EsQueryTemplate::getOwnerUserId, currentUserId);
+        }
+
+        // 关键字（按模板名称模糊）
+        if (StrUtil.isNotBlank(request.getKeyword())) {
+            qw.like(EsQueryTemplate::getTemplateName, request.getKeyword());
+        }
+
+        qw.orderByAsc(EsQueryTemplate::getTemplateType)
+                .orderByDesc(EsQueryTemplate::getIsDefault)
+                .orderByAsc(EsQueryTemplate::getSortOrder)
+                .orderByDesc(EsQueryTemplate::getCreateTime);
+
+        return this.list(qw).stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
     }
@@ -86,7 +96,7 @@ public class EsQueryTemplateServiceImpl
             if (entity == null || "1".equals(entity.getDelFlag())) {
                 throw new IllegalArgumentException("模板不存在或已删除");
             }
-            // 权限简单校验：个人模板只能本人修改
+            // 个人模板只能本人修改
             if (entity.getTemplateType() != null
                     && entity.getTemplateType() == 1
                     && entity.getOwnerUserId() != null
@@ -107,15 +117,15 @@ public class EsQueryTemplateServiceImpl
         if (entity.getTemplateType() != null && entity.getTemplateType() == 1) {
             entity.setOwnerUserId(currentUserId);
         } else {
-            // 公共模板：简单起见 ownerUserId 置空
+            // 公共模板：ownerUserId 置空
             entity.setOwnerUserId(null);
         }
 
-        // isDefault 处理
+        // 默认模板标记
         Integer isDefaultFlag = Boolean.TRUE.equals(request.getIsDefault()) ? 1 : 0;
         entity.setIsDefault(isDefaultFlag);
 
-        // 如果是默认模板，需要把同一数据集 + 类型 + 拥有者 的其它模板的默认取消
+        // 如果是默认模板，先把同一数据集 + 类型 + 拥有者的其他模板的默认取消
         if (isDefaultFlag == 1) {
             this.lambdaUpdate()
                     .eq(EsQueryTemplate::getDatasetId, entity.getDatasetId())
@@ -166,7 +176,7 @@ public class EsQueryTemplateServiceImpl
             throw new IllegalStateException("无权操作该模板");
         }
 
-        // 先取消其它模板的默认
+        // 取消其它默认
         this.lambdaUpdate()
                 .eq(EsQueryTemplate::getDatasetId, entity.getDatasetId())
                 .eq(EsQueryTemplate::getTemplateType, entity.getTemplateType())
