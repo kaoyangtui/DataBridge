@@ -281,11 +281,7 @@ public class EsQueryServiceImpl implements EsQueryService {
         if (StrUtil.isBlank(rawValue)) {
             return Collections.emptyList();
         }
-<<<<<<< ours
-        return Arrays.stream(rawValue.split(","))
-=======
         return Arrays.stream(rawValue.split("[,，]"))
->>>>>>> theirs
                 .collect(Collectors.toList());
     }
 
