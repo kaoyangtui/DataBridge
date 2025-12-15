@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  * ES 通用查询 - 同步任务管理
  */
 @RestController
-@RequestMapping("/admin/es/syncTask")
+@RequestMapping("/es/syncTask")
 @RequiredArgsConstructor
 @Tag(name = "ES 通用查询 - 同步任务管理")
 public class EsSyncTaskController {

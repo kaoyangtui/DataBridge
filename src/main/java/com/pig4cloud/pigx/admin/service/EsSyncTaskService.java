@@ -31,4 +31,10 @@ public interface EsSyncTaskService extends IService<EsSyncTask> {
      * 重试任务（将状态置为 init，清空统计）
      */
     boolean retryTask(Long id);
+
+    /** 启动任务（异步执行），仅允许 init 状态 */
+    boolean startTaskAsync(Long id);
+
+    /** 创建并立即启动（返回 taskId） */
+    Long createAndStart(EsSyncTaskCreateRequest request);
 }

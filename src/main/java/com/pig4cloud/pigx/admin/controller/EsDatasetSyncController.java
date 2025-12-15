@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/admin/es/sync")
+@RequestMapping("/es/sync")
 @RequiredArgsConstructor
 @Tag(name = "ES 通用查询 - 同步任务")
 public class EsDatasetSyncController {
